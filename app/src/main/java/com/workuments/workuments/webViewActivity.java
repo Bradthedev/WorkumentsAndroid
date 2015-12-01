@@ -33,20 +33,22 @@ public class webViewActivity extends AppCompatActivity {
     private ProgressDialog progressBar;
     private GestureDetectorCompat mDetector;
 
+    private WorkumentsApplication app;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web_view);
-
+        app = (WorkumentsApplication)getApplication();
         mDetector = new GestureDetectorCompat(this, new MyGestureListener());
 
         this.init();
 
         previousViewIntent = getIntent();
 
-        workumentsUrl = previousViewIntent.getStringExtra(logInActivity.EXTRA_URL);
-        workumentsUsername = previousViewIntent.getStringExtra(logInActivity.EXTRA_USERNAME);
-        workumentsPassword = previousViewIntent.getStringExtra(logInActivity.EXTRA_PASSWORD);
+        workumentsUrl = previousViewIntent.getStringExtra(app.EXTRA_URL);
+        workumentsUsername = previousViewIntent.getStringExtra(app.EXTRA_USERNAME);
+        workumentsPassword = previousViewIntent.getStringExtra(app.EXTRA_PASSWORD);
 
         final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
 
@@ -58,7 +60,7 @@ public class webViewActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             WebView.setWebContentsDebuggingEnabled(true);
         }
-        workumentsWebView.setWebViewClient(new WorkumentsWebViewClient(this, progressBar, alertDialog, workumentsUsername, workumentsPassword));
+        workumentsWebView.setWebViewClient(new WorkumentsWebViewClient(this, progressBar, alertDialog));
         workumentsWebView.loadUrl("https://" + workumentsUrl + "/services/app/mobile/login.aspx?onerror=friendly&login=" + workumentsUsername + "&password=" + workumentsPassword);
 
         act = this;

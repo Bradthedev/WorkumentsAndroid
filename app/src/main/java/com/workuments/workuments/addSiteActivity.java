@@ -23,6 +23,7 @@ public class addSiteActivity extends AppCompatActivity {
     private String workumentsUrl;
     private String workumentsUsername;
     private String workumentsName;
+    private WorkumentsApplication app;
     private WorkumentsAPI api;
 
 
@@ -48,8 +49,8 @@ public class addSiteActivity extends AppCompatActivity {
         siteName.setText(workumentsName);
         siteUsername.setText(workumentsUsername);
         siteUrl.setText(workumentsUrl);
-
-        api = new WorkumentsAPI(this);
+        app = (WorkumentsApplication)getApplication();
+        api = app.apiConnection;
 
         this.openDB();
     }
@@ -94,13 +95,24 @@ public class addSiteActivity extends AppCompatActivity {
             new Thread(){
                 @Override
                 public void run(){
-                    final byte[] img = api.GetSiteLogo(siteUrl.getText().toString());
-                    if (id != null) {
-                        Long tableId = Long.valueOf(id);
-                        database.updateRow(tableId, img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
+                    if(app.isConnectedToNetwork) {
+                        final byte[] img = api.GetSiteLogo(siteUrl.getText().toString());
+                        if (id != null) {
+                            Long tableId = Long.valueOf(id);
+                            database.updateRow(tableId, img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
+                        } else {
+                            database.insertRow(img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
+                        }
                     } else {
-                        database.insertRow(img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
+                        final byte[] img = new byte[0];
+                        if (id != null) {
+                            Long tableId = Long.valueOf(id);
+                            database.updateRow(tableId, img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
+                        } else {
+                            database.insertRow(img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
+                        }
                     }
+
 
                     startActivity(i);
                 }

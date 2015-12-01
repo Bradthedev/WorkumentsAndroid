@@ -20,25 +20,19 @@ class WorkumentsWebViewClient extends WebViewClient {
 
     private static final String TAG = "WorkumentsWebViewClient";
 
-    private boolean AlreadyLoggedIn = false;
     private Activity sender;
     private ProgressDialog pd;
     private AlertDialog ad;
     private String un;
     private String pw;
-    private SharedPreferences sp;
-    private SharedPreferences.Editor spe;
+    private WorkumentsApplication app;
 
-    private int logInAttempts = 0;
+    WorkumentsWebViewClient(Activity activity, ProgressDialog progressDialog, AlertDialog alertDialog){
 
-    WorkumentsWebViewClient(Activity activity, ProgressDialog progressDialog, AlertDialog alertDialog, String username, String password){
         sender = activity;
+        app = (WorkumentsApplication)sender.getApplication();
         pd = progressDialog;
         ad = alertDialog;
-        un = username;
-        pw = password;
-        sp = sender.getSharedPreferences(logInActivity.PREFS_NAME, 0);
-        spe = sp.edit();
     }
 
     @Override
@@ -47,14 +41,13 @@ class WorkumentsWebViewClient extends WebViewClient {
         Intent i = new Intent(sender.getBaseContext(), logInActivity.class);
         if (url.contains("Logout.aspx")) {
             view.loadUrl(url);
-            spe.putBoolean(logInActivity.EXTRA_KEEP_LOGGED_IN, false);
-            spe.commit();
+            app.setKeepedLoggedIn(false);
             sender.startActivity(i);
-        } else if (url.contains("login.aspx?redir=")) {
-            if (sp.getBoolean(logInActivity.EXTRA_KEEP_LOGGED_IN, false)) {
-                view.loadUrl("https://" + sp.getString(logInActivity.EXTRA_URL, "") + "/services/app/mobile/login.aspx?onerror=friendly&login=" + un + "&password=" + pw);
-            } else {
-                sender.startActivity(i);
+            sender.finish();
+        } else if (url.contains("login.aspx")) {
+            if (app.keepLoggedIn()) {
+                Credentials credentials = app.getCredentialsFromSavedPrefs();
+                view.loadUrl("https://" + credentials.getUrl() + "/services/app/mobile/login.aspx?onerror=friendly&login=" + credentials.getUsername() + "&password=" + credentials.getPassword());
             }
         } else {
             view.loadUrl(url);
@@ -89,12 +82,4 @@ class WorkumentsWebViewClient extends WebViewClient {
         handler.proceed(); // Ignore SSL certificate errors
     }
 
-    private void injectLoginScript(WebView view){
-        String js = "javascript:(function() { " +
-                "$('[name=\"login\"]').val('" + un + "');"+
-                "$('[name=\"password\"]').val('" + pw + "');"+
-                "$('[name=\"submit\"]').click();"+
-                "})()";
-        view.loadUrl(js);
-    }
 }

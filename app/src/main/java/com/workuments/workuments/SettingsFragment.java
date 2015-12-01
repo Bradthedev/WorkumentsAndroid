@@ -15,13 +15,13 @@ public class SettingsFragment extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        final WorkumentsApplication app = (WorkumentsApplication)getActivity().getApplication();
         // Load the preferences from an XML resource
         addPreferencesFromResource(R.xml.preferences);
 
-        final CheckBoxPreference checkBoxPreference = (CheckBoxPreference) getPreferenceManager().findPreference(logInActivity.EXTRA_KEEP_LOGGED_IN);
-        final SharedPreferences prefs = getActivity().getSharedPreferences(logInActivity.PREFS_NAME, 0);
-        checkBoxPreference.setChecked(prefs.getBoolean(logInActivity.EXTRA_KEEP_LOGGED_IN, false));
+        final CheckBoxPreference checkBoxPreference = (CheckBoxPreference) getPreferenceManager().findPreference(app.SP_KEEPED_LOGGED_IN);
+        final SharedPreferences prefs = getActivity().getSharedPreferences(app.SP_KEEPED_LOGGED_IN, 0);
+        checkBoxPreference.setChecked(prefs.getBoolean(app.SP_KEEPED_LOGGED_IN, false));
 
         checkBoxPreference.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             public boolean onPreferenceChange(Preference preference, Object newValue) {
@@ -29,7 +29,7 @@ public class SettingsFragment extends PreferenceFragment {
                 SharedPreferences.Editor spe = prefs.edit();
 
                 if(newValue instanceof Boolean) {
-                    spe.putBoolean(logInActivity.EXTRA_KEEP_LOGGED_IN, (boolean)newValue);
+                    spe.putBoolean(app.SP_KEEPED_LOGGED_IN, (boolean)newValue);
                 }
 
                 spe.commit();

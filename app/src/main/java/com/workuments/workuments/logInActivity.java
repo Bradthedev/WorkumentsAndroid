@@ -22,14 +22,9 @@ import java.util.ArrayList;
 
 
 public class logInActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
-    public final static String PREFS_NAME = "com.workuments.workuments";
-
-    public final static String EXTRA_URL = "com.workuments.workuments.siteUrl";
-    public final static String EXTRA_USERNAME = "com.workuments.workuments.username";
-    public final static String EXTRA_PASSWORD = "com.workuments.workuments.password";
-    public final static String EXTRA_KEEP_LOGGED_IN = "com.workuments.workuments.keepLoggedIn";
-
     private static final String TAG = "logInActivity";
+
+    private WorkumentsApplication app;
 
     private ArrayList<SiteResults> SiteList;
 
@@ -47,41 +42,32 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
 
     private SharedPreferences prefs;
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log_in);
 
+        app = (WorkumentsApplication)getApplication();
+
         site = (Spinner) findViewById(R.id.siteNameSpinner);
         username = (EditText) findViewById(R.id.usernameTextBox);
         password = (EditText) findViewById(R.id.passwordTextBox);
         keepLoggedIn = (Switch) findViewById(R.id.keepLoggedInSwitch);
-        prefs = getSharedPreferences(PREFS_NAME,0);
-
-        api = new WorkumentsAPI(this);
-        try {
-            api.UpdateLocalDatabaseLogos();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
         this.init();
 
-        boolean kli = prefs.getBoolean(EXTRA_KEEP_LOGGED_IN, false);
-        keepLoggedIn.setChecked(kli);
+        api = app.apiConnection;
+        database = app.siteDatabase;
 
-        if(kli) {
+        keepLoggedIn.setChecked(app.keepLoggedIn());
+
+        if(app.keepLoggedIn()) {
             automaticLogIn();
         }
 
         arrayAdapter = new CustomBaseAdapter(this, SiteList);
         site.setOnItemSelectedListener(this);
         viewDatabase();
-
-
     }
 
     private void init(){
@@ -102,14 +88,16 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
     @Override
     protected void onResume(){
         super.onResume();
-        getSharedPreferences(PREFS_NAME, 0);
-        boolean kli = prefs.getBoolean(EXTRA_KEEP_LOGGED_IN, false);
-        keepLoggedIn.setChecked(kli);
+        keepLoggedIn.setChecked(app.keepLoggedIn());
     }
 
     public void logInButton_Click(View view) {
         Log.d(TAG, "Button 'logInButton' Clicked");
-        this.logIn();
+        if(app.isConnectedToNetwork) {
+            this.logIn();
+        } else {
+            Toast.makeText(this, "No Network Connection", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void logIn(){
@@ -125,11 +113,11 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
     }
 
     private void automaticLogIn(){
-        SharedPreferences sp = getSharedPreferences(PREFS_NAME,0);
-        api.setUrl(sp.getString(EXTRA_URL, ""));
-        boolean loginValid = api.Login(sp.getString(EXTRA_USERNAME, ""), sp.getString(EXTRA_PASSWORD, ""));
+        Credentials credentials = app.getCredentialsFromSavedPrefs();
+        api.setUrl(credentials.getUrl());
+        boolean loginValid = api.Login(credentials.getUsername(), credentials.getPassword());
         if (loginValid) {
-            logInRedirect(sp.getString(EXTRA_USERNAME, ""), sp.getString(EXTRA_PASSWORD, ""), sp.getString(EXTRA_URL, ""));
+            logInRedirect(credentials.getUsername(), credentials.getPassword(), credentials.getUrl());
         } else {
             Toast.makeText(this, "Invalid Username or Password", Toast.LENGTH_SHORT).show();
         }
@@ -139,19 +127,15 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
         Log.d(TAG, "Function 'logInRedirect()' started");
 
         if(keepLoggedIn.isChecked()) {
-            SharedPreferences sp = getSharedPreferences(PREFS_NAME,0);
-            SharedPreferences.Editor spe = sp.edit();
-            spe.putBoolean(EXTRA_KEEP_LOGGED_IN, true);
-            spe.putString(EXTRA_USERNAME, username.getText().toString());
-            spe.putString(EXTRA_PASSWORD, password.getText().toString());
-            spe.putString(EXTRA_URL, url);
-            spe.commit();
+            Credentials c = new Credentials(url, username.getText().toString(), password.getText().toString());
+            app.updateSavedPrefsCredentials(c);
+            app.setKeepedLoggedIn(true);
         }
 
         Intent logInIntent = new Intent(this, webViewActivity.class);
-        logInIntent.putExtra(EXTRA_URL, url);
-        logInIntent.putExtra(EXTRA_USERNAME, username.getText().toString());
-        logInIntent.putExtra(EXTRA_PASSWORD, password.getText().toString());
+        logInIntent.putExtra(app.EXTRA_URL, url);
+        logInIntent.putExtra(app.EXTRA_USERNAME, username.getText().toString());
+        logInIntent.putExtra(app.EXTRA_PASSWORD, password.getText().toString());
         this.startActivity(logInIntent);
 
         Log.d(TAG, "Function 'logInRedirect()' ended");
@@ -159,11 +143,10 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
 
     private void logInRedirect(final String _username, final String _password, final String _url){
         Log.d(TAG, "Function 'logInRedirect(String _username, String _password, String _url)' started");
-
         Intent logInIntent = new Intent(this, webViewActivity.class);
-        logInIntent.putExtra(EXTRA_URL, _url);
-        logInIntent.putExtra(EXTRA_USERNAME, _username);
-        logInIntent.putExtra(EXTRA_PASSWORD, _password);
+        logInIntent.putExtra(app.EXTRA_URL, _url);
+        logInIntent.putExtra(app.EXTRA_USERNAME, _username);
+        logInIntent.putExtra(app.EXTRA_PASSWORD, _password);
         this.startActivity(logInIntent);
         Log.d(TAG, "Function 'logInRedirect(String _username, String _password, String _url)' ended");
     }
@@ -171,15 +154,6 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
     private void settingsRedirect(){
         Intent settingsIntent = new Intent(this, sitesTableViewActivity.class);
         startActivity(settingsIntent);
-    }
-
-    private void openDB() {
-        database = new DBAdapter(this);
-        database.open();
-    }
-
-    private void closeDB() {
-        database.close();
     }
 
     @Override
@@ -223,12 +197,10 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
     }
 
     private void viewDatabase(){
-        openDB();
         Cursor databaseCursor = database.getAllRows();
         SiteList = HelperFunctions.GetSiteResultsArray(databaseCursor);
         arrayAdapter = new CustomBaseAdapter(this, SiteList);
         site.setAdapter(arrayAdapter);
-        closeDB();
     }
 
 }

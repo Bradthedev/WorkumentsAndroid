@@ -12,6 +12,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -28,11 +29,13 @@ public class WorkumentsAPI{
     private Boolean LoggedIn;
     private String tempUrl;
     private Context context;
+    private WorkumentsAPI localContext;
     private DBAdapter db;
     private ExecutorService threadPool;
 
     public WorkumentsAPI(Context _context) {
         context = _context;
+        localContext = this;
         this.init();
     }
 
@@ -70,7 +73,25 @@ public class WorkumentsAPI{
     }
 
     public byte[] GetSiteLogo(){
-        return this.GetSiteLogo(Url);
+        byte[] result = new byte[0];
+        Future logo = threadPool.submit(new Callable<Object>() {
+            public Object call() throws Exception {
+                byte[] tempIcon =  localContext.GetSiteLogo(Url);
+                return tempIcon;
+            }
+        });
+
+        while (!logo.isDone());
+
+        try {
+            result = (byte[])logo.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        return result;
     }
 
     public byte[] GetSiteLogo(String _url) {
@@ -126,5 +147,6 @@ public class WorkumentsAPI{
 
     private void init() {
         threadPool = Executors.newFixedThreadPool(NUMBER_OF_WORKER_THREADS);
+        HelperFunctions.disableSSLCertificateChecking();
     }
 }
