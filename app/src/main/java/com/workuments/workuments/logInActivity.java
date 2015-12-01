@@ -3,11 +3,7 @@ package com.workuments.workuments;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -20,10 +16,8 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 
 
@@ -47,6 +41,7 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
     private Switch keepLoggedIn;
 
     private String url;
+    private WorkumentsAPI api;
 
     private CustomBaseAdapter arrayAdapter;
 
@@ -65,6 +60,13 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
         password = (EditText) findViewById(R.id.passwordTextBox);
         keepLoggedIn = (Switch) findViewById(R.id.keepLoggedInSwitch);
         prefs = getSharedPreferences(PREFS_NAME,0);
+
+        api = new WorkumentsAPI(this);
+        try {
+            api.UpdateLocalDatabaseLogos();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         this.init();
 
@@ -112,17 +114,25 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
 
     private void logIn(){
         Log.d(TAG, "Function 'logIn()' started");
-        new Thread(){
-            WorkumentsAPI api = new WorkumentsAPI(url);
-            boolean loginValid = api.Login(username.getText().toString(), password.getText().toString());
-        }.start();
-        this.logInRedirect();
+        api.setUrl(url);
+        boolean loginValid = api.Login(username.getText().toString(), password.getText().toString());
+        if (loginValid) {
+            this.logInRedirect();
+        } else {
+            Toast.makeText(this, "Invalid Username or Password", Toast.LENGTH_SHORT).show();
+        }
         Log.d(TAG, "Function 'logIn()' ended");
     }
 
     private void automaticLogIn(){
         SharedPreferences sp = getSharedPreferences(PREFS_NAME,0);
-        logInRedirect(sp.getString(EXTRA_USERNAME, ""), sp.getString(EXTRA_PASSWORD, ""), sp.getString(EXTRA_URL, ""));
+        api.setUrl(sp.getString(EXTRA_URL, ""));
+        boolean loginValid = api.Login(sp.getString(EXTRA_USERNAME, ""), sp.getString(EXTRA_PASSWORD, ""));
+        if (loginValid) {
+            logInRedirect(sp.getString(EXTRA_USERNAME, ""), sp.getString(EXTRA_PASSWORD, ""), sp.getString(EXTRA_URL, ""));
+        } else {
+            Toast.makeText(this, "Invalid Username or Password", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void logInRedirect(){
@@ -163,12 +173,12 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
         startActivity(settingsIntent);
     }
 
-    public void openDB() {
+    private void openDB() {
         database = new DBAdapter(this);
         database.open();
     }
 
-    public void closeDB() {
+    private void closeDB() {
         database.close();
     }
 
@@ -218,11 +228,7 @@ public class logInActivity extends AppCompatActivity implements AdapterView.OnIt
         SiteList = HelperFunctions.GetSiteResultsArray(databaseCursor);
         arrayAdapter = new CustomBaseAdapter(this, SiteList);
         site.setAdapter(arrayAdapter);
-        //final byte[] img = HelperFunctions.LoadImageFromWebOperations("http://workuments.com/images/workuments_transparent.gif");
-        //database.insertRow( img, "Workuments", "www.workuments.com", "bradthedev@gmail.com");
         closeDB();
     }
-
-
 
 }

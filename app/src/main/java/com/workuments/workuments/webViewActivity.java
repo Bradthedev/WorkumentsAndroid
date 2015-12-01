@@ -7,7 +7,6 @@ import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.view.GestureDetectorCompat;
-import android.support.v4.view.MotionEventCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -15,7 +14,6 @@ import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.TextView;
@@ -61,7 +59,7 @@ public class webViewActivity extends AppCompatActivity {
             WebView.setWebContentsDebuggingEnabled(true);
         }
         workumentsWebView.setWebViewClient(new WorkumentsWebViewClient(this, progressBar, alertDialog, workumentsUsername, workumentsPassword));
-        workumentsWebView.loadUrl("https://" + workumentsUrl + "/services/login/login2.aspx");
+        workumentsWebView.loadUrl("https://" + workumentsUrl + "/services/app/mobile/login.aspx?onerror=friendly&login=" + workumentsUsername + "&password=" + workumentsPassword);
 
         act = this;
     }
@@ -104,35 +102,6 @@ public class webViewActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(event);
     }
 
-    class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
-        private static final String DEBUG_TAG = "Gestures";
-        private static final int SWIPE_MIN_DISTANCE = 150;
-
-        private static final int SWIPE_MAX_OFF_PATH = 100;
-
-        private static final int SWIPE_THRESHOLD_VELOCITY = 1500;
-        @Override
-        public boolean onDown(MotionEvent event) {
-            Log.d(DEBUG_TAG,"onDown: " + event.toString());
-            return true;
-        }
-
-        @Override
-        public boolean onFling(MotionEvent event1, MotionEvent event2,
-                               float velocityX, float velocityY) {
-            if(Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
-                if (event1.getY() > event2.getY()) {
-                    Log.d(DEBUG_TAG, "onFlingUp: " + velocityY + event1.toString() + event2.toString());
-                    act.hideToolbar();
-                } else {
-                    Log.d(DEBUG_TAG, "onFlingDown: " + velocityY + event1.toString() + event2.toString());
-                    act.showToolbar();
-                }
-            }
-            return true;
-        }
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -148,7 +117,7 @@ public class webViewActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        switch(id){
+        switch (id) {
             case R.id.action_settings:
                 settingsRedirect();
                 return true;
@@ -160,6 +129,36 @@ public class webViewActivity extends AppCompatActivity {
     private void settingsRedirect(){
         Intent i = new Intent(this, settingsActivity.class);
         startActivity(i);
+    }
+
+    class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+        private static final String DEBUG_TAG = "Gestures";
+        private static final int SWIPE_MIN_DISTANCE = 150;
+
+        private static final int SWIPE_MAX_OFF_PATH = 100;
+
+        private static final int SWIPE_THRESHOLD_VELOCITY = 1500;
+
+        @Override
+        public boolean onDown(MotionEvent event) {
+            Log.d(DEBUG_TAG, "onDown: " + event.toString());
+            return true;
+        }
+
+        @Override
+        public boolean onFling(MotionEvent event1, MotionEvent event2,
+                               float velocityX, float velocityY) {
+            if (Math.abs(velocityY) > SWIPE_THRESHOLD_VELOCITY) {
+                if (event1.getY() > event2.getY()) {
+                    Log.d(DEBUG_TAG, "onFlingUp: " + velocityY + event1.toString() + event2.toString());
+                    act.hideToolbar();
+                } else {
+                    Log.d(DEBUG_TAG, "onFlingDown: " + velocityY + event1.toString() + event2.toString());
+                    act.showToolbar();
+                }
+            }
+            return true;
+        }
     }
 
 }

@@ -1,7 +1,5 @@
 package com.workuments.workuments;
 
-import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -12,12 +10,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-
-import javax.net.ssl.HttpsURLConnection;
 
 public class addSiteActivity extends AppCompatActivity {
 
@@ -31,6 +23,7 @@ public class addSiteActivity extends AppCompatActivity {
     private String workumentsUrl;
     private String workumentsUsername;
     private String workumentsName;
+    private WorkumentsAPI api;
 
 
 
@@ -55,6 +48,8 @@ public class addSiteActivity extends AppCompatActivity {
         siteName.setText(workumentsName);
         siteUsername.setText(workumentsUsername);
         siteUrl.setText(workumentsUrl);
+
+        api = new WorkumentsAPI(this);
 
         this.openDB();
     }
@@ -90,7 +85,7 @@ public class addSiteActivity extends AppCompatActivity {
     }
 
     public void saveSiteButton_Click(View v) {
-        Intent i = new Intent(this, sitesTableViewActivity.class);
+        final Intent i = new Intent(this, sitesTableViewActivity.class);
         if(siteName.getText().toString().matches("")) {
             Toast.makeText(this, "You did not enter a Name", Toast.LENGTH_SHORT).show();
         } else if(siteUrl.getText().toString().matches("")) {
@@ -99,18 +94,19 @@ public class addSiteActivity extends AppCompatActivity {
             new Thread(){
                 @Override
                 public void run(){
-                    WorkumentsAPI api = new WorkumentsAPI(siteUrl.getText().toString());
-                    final byte[] img = api.GetSiteLogo();
+                    final byte[] img = api.GetSiteLogo(siteUrl.getText().toString());
                     if (id != null) {
                         Long tableId = Long.valueOf(id);
                         database.updateRow(tableId, img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
                     } else {
                         database.insertRow(img, siteName.getText().toString(), siteUrl.getText().toString(), siteUsername.getText().toString());
                     }
+
+                    startActivity(i);
                 }
             }.start();
         }
-        startActivity(i);
+
     }
 
     @Override

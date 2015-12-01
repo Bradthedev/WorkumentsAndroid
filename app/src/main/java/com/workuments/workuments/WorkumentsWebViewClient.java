@@ -5,13 +5,12 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
+import android.content.SharedPreferences;
 import android.net.http.SslError;
 import android.util.Log;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 /**
@@ -27,6 +26,8 @@ class WorkumentsWebViewClient extends WebViewClient {
     private AlertDialog ad;
     private String un;
     private String pw;
+    private SharedPreferences sp;
+    private SharedPreferences.Editor spe;
 
     private int logInAttempts = 0;
 
@@ -36,12 +37,28 @@ class WorkumentsWebViewClient extends WebViewClient {
         ad = alertDialog;
         un = username;
         pw = password;
+        sp = sender.getSharedPreferences(logInActivity.PREFS_NAME, 0);
+        spe = sp.edit();
     }
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-        Log.i(TAG, "Processing webview url click...");
-        view.loadUrl(url);
+        Log.i(TAG, "Processing webview url click... " + url);
+        Intent i = new Intent(sender.getBaseContext(), logInActivity.class);
+        if (url.contains("Logout.aspx")) {
+            view.loadUrl(url);
+            spe.putBoolean(logInActivity.EXTRA_KEEP_LOGGED_IN, false);
+            spe.commit();
+            sender.startActivity(i);
+        } else if (url.contains("login.aspx?redir=")) {
+            if (sp.getBoolean(logInActivity.EXTRA_KEEP_LOGGED_IN, false)) {
+                view.loadUrl("https://" + sp.getString(logInActivity.EXTRA_URL, "") + "/services/app/mobile/login.aspx?onerror=friendly&login=" + un + "&password=" + pw);
+            } else {
+                sender.startActivity(i);
+            }
+        } else {
+            view.loadUrl(url);
+        }
         return true;
     }
 
@@ -50,15 +67,6 @@ class WorkumentsWebViewClient extends WebViewClient {
         Log.i(TAG, "Finished loading URL: " + url);
         if (pd.isShowing()) {
             pd.dismiss();
-        }
-        if(url.contains("login.aspx")) {
-            if (!AlreadyLoggedIn) {
-                injectLoginScript(view);
-                logInAttempts++;
-
-                if(logInAttempts > 5)
-                    AlreadyLoggedIn = true;
-            }
         }
     }
 
