@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference android:title="Keep Me Logged In"
+        android:defaultValue="false"
+        android:summary="This option if selected will allow the application to save your password and username an keep you logged in."
+        android:key="com.workuments.workuments.keepLoggedIn" />
+</PreferenceScreen>

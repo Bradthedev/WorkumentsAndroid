@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Workuments</string>
+    <string name="action_settings">Settings</string>
+    <string name="LogInSwitchString">Keep Me Logged In</string>
+    <string name="title_activity_web_view">WebViewActivity</string>
+    <string name="title_activity_settings">settingsActivity</string>
+</resources>
